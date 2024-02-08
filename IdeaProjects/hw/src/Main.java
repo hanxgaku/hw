@@ -10,7 +10,7 @@ public class Main {
         int[] a = {1,3,5};
         int[] b = {2,4,6};
         int[] c = {2,1,3,5,4};
-        System.out.println(Arrays.toString(qsort(c)));
+        System.out.println(Arrays.toString(msort(c)));
         }
     public static int factorial(int n) {
         int x = 1;
@@ -116,6 +116,29 @@ public class Main {
         return joined;
     }
 
+    public static int[] join_arr_rec(int[] a, int[] b) {
+        if (a.length == 0) {
+            return b;
+        }
+        else if (b.length == 0) {
+            return a;
+        }
+        else if (a[0] < b[0]) {
+            int[] x = new int[a.length - 1];
+            for (int i = 0; i < a.length - 1; i++) {
+                x[i] = a[i + 1];
+            }
+            return join_arr(new int[] {a[0]}, join_arr_rec(x, b));
+        }
+        else {
+            int[] x = new int[b.length - 1];
+            for (int i = 0; i < b.length - 1; i++) {
+                x[i] = b[i + 1];
+            }
+            return join_arr(new int[] {b[0]}, join_arr_rec(a, x));
+        }
+    }
+
     public static int[] bsort(int[] a) {
         int n, k = 0;
         for (int i = 0; i < a.length - 1; i++) {
@@ -173,7 +196,6 @@ public class Main {
     }
 
     public static int[] msort(int[] a) {
-
         if (a.length == 0) {
             return new int[] {};
         }
