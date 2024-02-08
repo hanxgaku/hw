@@ -117,7 +117,7 @@ def bsort_while_1(a: [int]) -> [int]:
 
 
 
-print(bsort_while_1([3,5,2,7,1]))
+#print(bsort_while_1([3,5,2,7,1]))
 
 def join_arr_rec(a, b):
     if len(a) == 0:
@@ -174,3 +174,26 @@ def qsort(a : [int]) -> [int]:
 
 
 #print(qsort([5,3,7,2,9,6,1]))
+
+
+
+#"abc" -> "abc","acb", "cab", "cba", "bac", "bca"
+#"bc" -> ["bc", "cb"] -> ["abc", "acb"]
+#"ac" -> ["ac", "ca"] -> ["bac", "bca"]
+#"ab" -> ["ab", "ba"] -> ["cab", "cba"]
+
+def permutations(s : str, d: int) -> [str]:
+    print(s, d)
+    if not s:
+        return [""]
+    x = []
+    for i in range(len(s)):
+         p = permutations(s[:i] + s[i + 1:], d + 1)
+         x = x + [s[i] + j for j in p]
+    print(x, d)
+    return x
+    
+print(permutations("abc", 0))
+
+abcd -> abc|d, ab|cd, a|bcd, a|bc|d, ab|c|d, a|b|cd, a|b|c|d
+bcd -> b|cd, bc|d, b|c|d
