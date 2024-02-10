@@ -10,7 +10,7 @@ public class Main {
         int[] a = {1,3,5};
         int[] b = {2,4,6};
         int[] c = {2,1,3,5,4};
-        System.out.println(Arrays.toString(msort(c)));
+        System.out.println(Arrays.toString(join_arr(a, b)));
         }
     public static int factorial(int n) {
         int x = 1;
