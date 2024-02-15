@@ -1,4 +1,6 @@
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 //TIP To <b>Run</b> code, press <shortcut actionId="Run"/> or
 // click the <icon src="AllIcons.Actions.Execute"/> icon in the gutter.
@@ -10,7 +12,7 @@ public class Main {
         int[] a = {1,3,5};
         int[] b = {2,4,6};
         int[] c = {2,1,3,5,4};
-        System.out.println(Arrays.toString(join_arr(a, b)));
+        System.out.println(permutations2("abc"));
         }
     public static int factorial(int n) {
         int x = 1;
@@ -232,6 +234,41 @@ public class Main {
             }
         }
         return join_arr(join_arr(qsort(x), new int[] {k}), qsort(y));
+    }
+
+    public static ArrayList<String> permutations(String s) {
+        if (s.isEmpty()) {
+            return new ArrayList<>(List.of(""));
+        }
+        ArrayList<String> x = new ArrayList<>(), p;
+        for (int i = 0; i < s.length(); i++) {
+            String slice = s.substring(0, i) + s.substring(i + 1);
+            p = permutations(slice);
+            String prefix = Character.toString(s.charAt(i));
+            for (String n : p) {
+                x.add(prefix + n);
+            }
+        }
+        return x;
+    }
+
+    public static ArrayList<String> permutations2(String s) {
+        if (s.isEmpty()) {
+            return new ArrayList<>(List.of(""));
+        }
+        else if (s.length() == 1) {
+            return new ArrayList<>(List.of(s));
+        }
+        ArrayList<String> x = new ArrayList<>(), p;
+        String prefix = Character.toString(s.charAt(0));
+        p = permutations2(s.substring(1));
+        for (String n : p) {
+            x.add(prefix + n);
+        }
+        for (String n : p) {
+            x.add(prefix + "|" + n);
+        }
+        return x;
     }
 }
 

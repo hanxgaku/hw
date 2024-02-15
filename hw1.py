@@ -200,12 +200,8 @@ def permutations2(s: str) -> [str]:
         return [""]
     elif len(s) == 1:
         return [s]
-    x = []
-    p = []
     p = permutations2(s[1:])
-    x = x + [s[0] + "|" + j for j in p]
-    x = x + [s[0] + j for j in p]
-    return x
+    return [s[0] + "|" + j for j in p] + [s[0] + j for j in p]
     
 #abcd -> abc|d, ab|cd, a|bcd, a|bc|d, ab|c|d, a|b|cd, a|b|c|d
 #bcd -> b|cd, bc|d, b|c|d
