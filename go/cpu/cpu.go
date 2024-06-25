@@ -144,6 +144,46 @@ func sub(a string, b string) string {
 	return string(res)
 }
 
+func increment(a string) string {
+	bit := len(a)
+	one := make([]byte, bit)
+	for i := range bit {
+		if i == bit-1 {
+			one[i] = '1'
+		} else {
+			one[i] = '0'
+		}
+	}
+	return add(a, string(one))
+}
+
+func two_complement(a string) string {
+	bit := len(a)
+	res := make([]byte, bit)
+
+	for i := range bit {
+		a_digit := a[i]
+		if a_digit == '1' {
+			res[i] = '0'
+		} else {
+			res[i] = '1'
+		}
+	}
+	return increment(string(res))
+}
+
+func subc(a string, b string) string {
+	bit := len(a)
+
+	if len(b) != bit {
+		panic("sub: size must be the same")
+	}
+
+	twoc := two_complement(b)
+
+	return add(a, twoc)
+}
+
 func mul(a string, b string) string {
 	X := 0
 	bit := len(a)
@@ -316,6 +356,19 @@ func mainloop() int {
 	// addrfield_mem[6] = mnemonic_to_instruction("MUL 8")
 	// addrfield_mem[7] = mnemonic_to_instruction("BR @3")
 
+	//  1000
+	// - 185
+	// -----
+	//  0815
+
+	//   999
+	// - 185
+	//------
+	//   814
+	// +   1
+	//------
+	//   815
+
 	for loop {
 		IR = addrfield_mem[btoint(PC)]
 		op, addrmode, addrfield := decode(IR)
@@ -383,11 +436,11 @@ func mainloop() int {
 			panic("not implemented")
 		}
 
-		fmt.Printf("AC  = %s (%d)\n", AC, btoint(AC))
-		fmt.Printf("PC  = %s       (%d)\n", PC, btoint(PC))
-		fmt.Printf("MAR = %s       (%d)\n", MAR, btoint(MAR))
-		fmt.Printf("MBR = %s (%d)\n", MBR, btoint(MBR))
-		fmt.Printf("IR  = %s (%s)\n\n", IR, instruction_to_mnemonic(IR))
+		fmt.Printf("AC  = %s (%d) | ", AC, btoint(AC))
+		fmt.Printf("PC  = %s       (%d) | ", PC, btoint(PC))
+		//fmt.Printf("MAR = %s       (%d)\n", MAR, btoint(MAR))
+		//fmt.Printf("MBR = %s (%d)\n", MBR, btoint(MBR))
+		fmt.Printf("IR  = %s (%s)\n", IR, instruction_to_mnemonic(IR))
 	}
 
 	fmt.Println(btoint(AC))
