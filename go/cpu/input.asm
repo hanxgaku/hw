@@ -1,0 +1,7 @@
+ ORG 0
+ LOAD X
+ SUB Y
+ HALT
+X DATA 4
+Y DATA 5
+ END 0

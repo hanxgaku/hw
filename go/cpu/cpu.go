@@ -2,15 +2,24 @@ package main
 
 import (
 	"fmt"
-	"regexp"
+	"os"
 	"strconv"
+	"strings"
 )
 
 func main() {
-	mainloop()
-	//fmt.Println(btoint(sub(inttob(2, 16), inttob(1, 16))))
 
-	//fmt.Println(mnemonic_to_instruction("LOAD =4"))
+	filename := os.Args[1]
+	dat, err := os.ReadFile(filename)
+	if err != nil {
+		panic(err)
+	}
+
+	mainloop(strings.TrimSuffix(string(dat), "\n"))
+
+	//fmt.Println(btoint(sub(inttob(2, 16), inttob(1, 16))))
+	//fmt.Println(btoint(subc(inttob(373, 16), inttob(185, 16))))
+	//subcn(inttob(425, 16), inttob(400, 16))
 }
 
 func pow(a int, b int) int {
@@ -20,7 +29,7 @@ func pow(a int, b int) int {
 	return a * pow(a, b-1)
 }
 
-func btoint(a string) int {
+func btoint_helper(a string) int {
 	bit := len(a)
 	res := 0
 	for i := range bit {
@@ -31,6 +40,15 @@ func btoint(a string) int {
 	return res
 }
 
+func btoint(a string) int {
+	if a[0] == '1' {
+		res_positive := two_complement(a)
+		return -btoint_helper(res_positive)
+	}
+	return btoint_helper(a)
+}
+
+// TODO: account for sign bit
 func inttob(a int, bit int) string {
 	res := make([]byte, bit)
 	for i := range bit {
@@ -184,11 +202,38 @@ func subc(a string, b string) string {
 	return add(a, twoc)
 }
 
+func subcn(a string, b string) string {
+	bit := len(a)
+
+	if len(b) != bit {
+		panic("sub: size must be the same")
+	}
+
+	resc := subc(a, b)
+
+	if resc[0] == '1' {
+		ressigned := two_complement(resc)
+		fmt.Printf("-%d\n", btoint(ressigned))
+		return ressigned
+	} else {
+		fmt.Println(btoint(resc))
+		return resc
+	}
+}
+
+func make_zero(length int) string {
+	str := ""
+	for range length {
+		str = str + "0"
+	}
+	return str
+}
+
 func mul(a string, b string) string {
 	X := 0
 	bit := len(a)
 	temp := make([]byte, bit)
-	res := "0000000000000000"
+	res := make_zero(16)
 	for i := range bit {
 		for j := range bit {
 			if bit-j-1-X < 0 {
@@ -209,9 +254,29 @@ func mul(a string, b string) string {
 	return res
 }
 
-// func div(a string, b string) string {
+func div(a string, b string) string {
+	/*
+				Step 1: Divide the bits of the dividend and record the quotient.
+				Step 2: Multiply the divisor by the quotient and write the product.
+				Step 3: Subtract the product from the dividend and write the difference.
+				Step 4: Bring down the next digit and repeat.
+				LOAD X
+		 		ADD Y
+		 		HALT
+				X DATA 32
+				Y DATA 33
+	*/
+	return " "
+}
 
-// }
+func iszero(a string) bool {
+	for i := range len(a) {
+		if a[i] == '1' {
+			return false
+		}
+	}
+	return true
+}
 
 func decode(word string) (op string, addrmode string, addrfield string) {
 	return word[:4], word[4:6], word[6:]
@@ -261,68 +326,36 @@ func instruction_to_mnemonic(word string) string {
 	return res + strconv.Itoa(btoint(addrfield))
 }
 
-func mnemonic_to_instruction(word string) string {
-	reg := `^((?P<Op>(LOAD|STORE|CALL|BR|BREQ|BRGE|BRLT|ADD|SUB|MUL|DIV))\s+(?P<AddrMode>[=$@]?)(?P<AddrField>\d+))|(?P<Halt>HALT)$`
-	r := regexp.MustCompile(reg)
-	matches := r.FindStringSubmatch(word)
-
-	opindex := r.SubexpIndex("Op")
-	addrmodeindex := r.SubexpIndex("AddrMode")
-	addrfieldindex := r.SubexpIndex("AddrField")
-	haltindex := r.SubexpIndex("Halt")
-
-	op := matches[opindex]
-	addrmode := matches[addrmodeindex]
-	addrfield := matches[addrfieldindex]
-
-	if len(matches[haltindex]) != 0 {
-		return "0000000000000000"
-	} else {
-		res := ""
-		switch op {
-		case "LOAD":
-			res = res + "0001"
-		case "STORE":
-			res = res + "0010"
-		case "CALL":
-			res = res + "0011"
-		case "BR":
-			res = res + "0100"
-		case "BREQ":
-			res = res + "0101"
-		case "BRGE":
-			res = res + "0110"
-		case "BRLT":
-			res = res + "0111"
-		case "ADD":
-			res = res + "1000"
-		case "SUB":
-			res = res + "1001"
-		case "MUL":
-			res = res + "1010"
-		case "DIV":
-			res = res + "1011"
+func print_mem(memory []string) {
+	for i := range len(memory) {
+		if memory[i] != "0000000000000000" {
+			fmt.Printf("[%d] = %s\n", i, memory[i])
 		}
-
-		if addrmode == "=" {
-			res = res + "01"
-		} else if addrmode == "$" {
-			res = res + "10"
-		} else if addrmode == "@" {
-			res = res + "11"
-		} else {
-			res = res + "00"
-		}
-
-		i, _ := strconv.Atoi(addrfield)
-		return res + inttob(i, 10)
 	}
 }
 
-// if loop works make factorial
-func mainloop() int {
+func mainloop(data string) int {
 	loop := true
-	addrfield_mem := make([]string, 1024)
+
+	var addrfield_mem = make([]string, 1024)
+	for i := range len(addrfield_mem) {
+		addrfield_mem[i] = "0000000000000000"
+	}
+	data_arr := strings.Split(data, "\n")
+
+	fmt.Println(data_arr)
+
+	i := 0
+	for i < len(data_arr) {
+		org_address := btoint(data_arr[i])
+		word_count := btoint(data_arr[i+1])
+		fmt.Println("word count " + strconv.Itoa(word_count))
+		for j := range word_count - 1 {
+			fmt.Println(i + 2 + j)
+			addrfield_mem[org_address+j] = data_arr[i+2+j]
+		}
+		i = i + word_count + 2
+	}
 
 	AC := "0000000000000000"
 	PC := "0000000000"
@@ -330,18 +363,18 @@ func mainloop() int {
 	MBR := "0000000000000000"
 	IR := "0000000000000000"
 
-	// addrfield_mem[0] = mnemonic_to_instruction("LOAD @3")
+	/* addrfield_mem[0] = mnemonic_to_instruction("LOAD @3")
 	// addrfield_mem[1] = mnemonic_to_instruction("ADD 4")
 	// addrfield_mem[2] = mnemonic_to_instruction("HALT")
 	// addrfield_mem[3] = inttob(5, 16)  // 5
 	// addrfield_mem[4] = inttob(13, 16) // 13
 	// addrfield_mem[5] = inttob(42, 16) // 42
 
-	addrfield_mem[0] = "0001" + "01" + "0000000100" // LOAD =4
-	addrfield_mem[1] = "1001" + "01" + "0000000001" // SUB =1
-	addrfield_mem[2] = "0101" + "00" + "0000000100" // BREQ 4
-	addrfield_mem[3] = "0100" + "00" + "0000000001" // BR 1
-	addrfield_mem[4] = "0000" + "00" + "0000000000" // HALT
+	// addrfield_mem[0] = "0001" + "01" + "0000000100" // LOAD =4
+	// addrfield_mem[1] = "1001" + "01" + "0000000001" // SUB =1
+	// addrfield_mem[2] = "0101" + "00" + "0000000100" // BREQ 4
+	// addrfield_mem[3] = "0100" + "00" + "0000000001" // BR 1
+	// addrfield_mem[4] = "0000" + "00" + "0000000000" // HALT
 
 	// addrfield_mem[0] = "0001" + "01" + "0000000011" // LOAD =3
 	// addrfield_mem[1] = "0010" + "00" + "0000000101" // STORE 5
@@ -354,20 +387,7 @@ func mainloop() int {
 	// addrfield_mem[4] = mnemonic_to_instruction("LOAD =4")
 	// addrfield_mem[5] = mnemonic_to_instruction("STORE 8")
 	// addrfield_mem[6] = mnemonic_to_instruction("MUL 8")
-	// addrfield_mem[7] = mnemonic_to_instruction("BR @3")
-
-	//  1000
-	// - 185
-	// -----
-	//  0815
-
-	//   999
-	// - 185
-	//------
-	//   814
-	// +   1
-	//------
-	//   815
+	// addrfield_mem[7] = mnemonic_to_instruction("BR @3") */
 
 	for loop {
 		IR = addrfield_mem[btoint(PC)]
@@ -410,13 +430,17 @@ func mainloop() int {
 		case "0100": // BR
 			PC = MAR
 		case "0101": // BREQ
-			if AC == "0000000000000000" {
+			if iszero(AC) {
 				PC = MAR
 			}
 		case "0110": // BRGE
-			panic("not implemented")
+			if AC[0] == '0' || iszero(AC) {
+				PC = MAR
+			}
 		case "0111": // BRLT
-			panic("not implemented")
+			if AC[0] == '1' {
+				PC = MAR
+			}
 		case "1000": // ADD
 			if addrmode != "01" {
 				MBR = addrfield_mem[btoint(MAR)]
@@ -426,7 +450,7 @@ func mainloop() int {
 			if addrmode != "01" {
 				MBR = addrfield_mem[btoint(MAR)]
 			}
-			AC = sub(AC, MBR)
+			AC = subc(AC, MBR)
 		case "1010": // MUL
 			if addrmode != "01" {
 				MBR = addrfield_mem[btoint(MAR)]
