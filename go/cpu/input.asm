@@ -2,6 +2,7 @@
  LOAD X
  SUB Y
  HALT
+ BSS 1
 X DATA 4
 Y DATA 5
  END 0

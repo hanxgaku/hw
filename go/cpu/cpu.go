@@ -48,11 +48,17 @@ func btoint(a string) int {
 	return btoint_helper(a)
 }
 
-// TODO: account for sign bit
 func inttob(a int, bit int) string {
 	res := make([]byte, bit)
-	for i := range bit {
+	if a < 0 {
+		res[0] = '1'
+		a = -a
+	} else {
+		res[0] = '0'
+	}
+	for i := 1; i < bit; i++ {
 		curr := pow(2, bit-i-1)
+
 		if curr <= a {
 			res[i] = '1'
 			a = a - curr
@@ -60,6 +66,7 @@ func inttob(a int, bit int) string {
 			res[i] = '0'
 		}
 	}
+
 	return string(res)
 }
 
@@ -229,6 +236,7 @@ func make_zero(length int) string {
 	return str
 }
 
+// check with negative numbers
 func mul(a string, b string) string {
 	X := 0
 	bit := len(a)
@@ -326,11 +334,9 @@ func instruction_to_mnemonic(word string) string {
 	return res + strconv.Itoa(btoint(addrfield))
 }
 
-func print_mem(memory []string) {
-	for i := range len(memory) {
-		if memory[i] != "0000000000000000" {
-			fmt.Printf("[%d] = %s\n", i, memory[i])
-		}
+func print_mem(memory []string, start int, end int) {
+	for i := start; i < end; i++ {
+		fmt.Printf("[%d] = %s\n", i, memory[i])
 	}
 }
 
@@ -345,7 +351,8 @@ func mainloop(data string) int {
 
 	fmt.Println(data_arr)
 
-	i := 0
+	i := 1
+	// print elements
 	for i < len(data_arr) {
 		org_address := btoint(data_arr[i])
 		word_count := btoint(data_arr[i+1])
@@ -357,8 +364,10 @@ func mainloop(data string) int {
 		i = i + word_count + 2
 	}
 
+	print_mem(addrfield_mem, 0, 10)
+
 	AC := "0000000000000000"
-	PC := "0000000000"
+	PC := data_arr[0]
 	MAR := "0000000000"
 	MBR := "0000000000000000"
 	IR := "0000000000000000"

@@ -37,6 +37,17 @@ func pow(a int, b int) int {
 	return a * pow(a, b-1)
 }
 
+func btoint(a string) int {
+	bit := len(a)
+	res := 0
+	for i := range bit {
+		if a[i] == '1' {
+			res = res + pow(2, (bit-i-1))
+		}
+	}
+	return res
+}
+
 func inttob(a int, bit int) string {
 	res := make([]byte, bit)
 	if a < 0 {
@@ -154,12 +165,21 @@ func init_labels(data_arr []string) map[string]int {
 	return res
 }
 
-// implement END and BSS
+func append_org_block(address_block []string, org_block []string, org_address string) []string {
+	address_block = append(address_block, org_address)
+	address_block = append(address_block, inttob(len(org_block), 10))
+	address_block = append(address_block, org_block...)
+	return address_block
+}
+
 func initialize_asm(data string) []string {
 	var address_block []string
 	var org_block []string
-	var org_address string
 	var end_address string
+	bss_count := 0
+	org_count := 0
+	org_address_int := 0
+	org_address := "0000000000000000"
 	data_arr := strings.Split(data, "\n")
 	label_map := init_labels(data_arr)
 	fmt.Println(label_map)
@@ -179,6 +199,10 @@ func initialize_asm(data string) []string {
 		r3 := regexp.MustCompile(regend)
 		end_matches := r3.FindStringSubmatch(line)
 
+		regbss := `^(?P<Label>\w?)(\s+BSS)\s+(?P<Count>\d+)$`
+		r4 := regexp.MustCompile(regbss)
+		bss_matches := r4.FindStringSubmatch(line)
+
 		if len(data_matches) != 0 {
 			numbers_index := r1.SubexpIndex("Numbers")
 			numbers := strings.Split(data_matches[numbers_index], ",")
@@ -186,23 +210,37 @@ func initialize_asm(data string) []string {
 			fmt.Println(numbers)
 			for j := range len(numbers) {
 				number, _ := strconv.Atoi(numbers[j])
+				fmt.Println(number)
 				org_block = append(org_block, inttob(number, 16))
 				i++
 			}
 		} else if len(org_matches) != 0 {
 			if len(org_block) != 0 {
-				address_block = append(address_block, org_address)
-				address_block = append(address_block, inttob(len(org_block), 10))
-				address_block = append(address_block, org_block...)
+				address_block = append_org_block(address_block, org_block, org_address)
+				org_count = len(org_block)
 				org_block = nil
 			}
 
 			address_index := r2.SubexpIndex("AddrField")
 			org_address = org_matches[address_index]
+			org_address_int, _ = strconv.Atoi(org_address)
+			org_address = inttob(org_address_int, 10)
 			i++
 		} else if len(end_matches) != 0 {
 			address_index := r3.SubexpIndex("AddrField")
 			end_address = end_matches[address_index]
+			i++
+		} else if len(bss_matches) != 0 {
+			if len(org_block) != 0 {
+				//fmt.Println(org_address)
+				address_block = append_org_block(address_block, org_block, org_address)
+				org_count = len(org_block)
+				org_block = nil
+			}
+			bss_count_index := r4.SubexpIndex("Count")
+			bss_count, _ = strconv.Atoi(bss_matches[bss_count_index])
+			org_address_int = org_address_int + org_count + bss_count
+			org_address = inttob(org_address_int, 10)
 			i++
 		} else {
 			org_block = append(org_block, mnemonic_to_instruction(line, label_map))
@@ -210,11 +248,10 @@ func initialize_asm(data string) []string {
 		}
 	}
 	end_address_i, _ := strconv.Atoi(end_address)
-	org_address_i, _ := strconv.Atoi(org_address)
-	address_block = append(address_block, inttob(end_address_i, 10))
-	address_block = append(address_block, inttob(org_address_i, 10))
-	address_block = append(address_block, inttob(len(org_block), 10))
-	address_block = append(address_block, org_block...)
+	address_block = append(address_block, "0")
+	copy(address_block[1:], address_block)
+	address_block[0] = inttob(end_address_i, 10)
+	address_block = append_org_block(address_block, org_block, inttob(org_address_int, 10))
 	fmt.Println(address_block)
 	return address_block
 }
